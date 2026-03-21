@@ -100,12 +100,13 @@ cursor-skill-fullstack-native-app-builder/
     │   ├── openai-integration.md         # Chat, vision, retries, recommendations
     │   ├── storekit-subscriptions.md     # StoreKit 2, trial, paywall, gating
     │   └── widgets-liveactivities.md     # WidgetKit, Live Activities, App Group bridge
-    └── android/                          # Android platform
-        ├── android-skill.md              # Architecture, MainActivity, navigation, review
-        ├── firebase-android.md           # Auth, Firestore, FCM, Remote Config, WorkManager
-        ├── openai-android.md             # OkHttp chat, vision, retries, ProGuard
-        ├── play-billing.md               # Play Billing v8, trial, paywall, gating
-        └── widgets-livenotifications.md  # AppWidgetProvider, foreground service trackers
+    ├── android/                          # Android platform
+    │   ├── android-skill.md              # Architecture, MainActivity, navigation, review
+    │   ├── firebase-android.md           # Auth, Firestore, FCM, Remote Config, WorkManager
+    │   ├── openai-android.md             # OkHttp chat, vision, retries, ProGuard
+    │   ├── play-billing.md               # Play Billing v8, trial, paywall, gating
+    │   └── widgets-livenotifications.md  # AppWidgetProvider, foreground service trackers
+    └── cicd.md                           # GitHub Actions, Fastlane, Playwright, deployment
 ```
 
 ---

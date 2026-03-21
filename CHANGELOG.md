@@ -2,13 +2,25 @@
 
 All notable changes to this skill are documented here.
 
+## [0.4.0] - 2026-03-21
+
+### Added
+- CI/CD reference file (references/cicd.md) covering all three platforms:
+  - Playwright E2E testing for CMS with config, example tests, and GitHub Actions workflow
+  - Firebase Hosting deploy workflow
+  - Fastlane setup for iOS (tests, TestFlight, App Store submission) with GitHub Actions
+  - Fastlane setup for Android (tests, Play Store internal/production) with GitHub Actions
+  - Required GitHub Secrets reference table
+  - Branch strategy guidance
+- Referenced [Artl13/playwright-automation-test-package](https://github.com/Artl13/playwright-automation-test-package) as automation baseline
+
 ## [0.3.0] - 2026-03-21
 
 ### Added
 - Apple Sign-In with full `ASAuthorizationController` flow (firebase-ios.md)
 - Crashlytics usage examples: set user ID, custom keys, breadcrumb logs, non-fatal error recording (firebase-android.md)
 - Example prompts section in README showing how to trigger the skill in Cursor
-- This CHANGELOG
+- CHANGELOG
 
 ## [0.2.0] - 2026-03-21
 

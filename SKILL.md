@@ -142,6 +142,12 @@ All three platforms follow these common patterns:
 | [play-billing.md](references/android/play-billing.md) | Play Billing v8, trial manager, paywall, feature gating |
 | [widgets-livenotifications.md](references/android/widgets-livenotifications.md) | AppWidgetProvider, foreground service trackers, widget data bridge |
 
+### CI/CD & Testing (Cross-Platform)
+
+| File | Contents |
+|------|----------|
+| [cicd.md](references/cicd.md) | GitHub Actions, Fastlane (iOS/Android), Playwright E2E testing, Firebase deploy, Play Store / TestFlight automation |
+
 ## Important: Cost & Production Warnings
 
 Always inform the user about these risks when setting up a new project.
