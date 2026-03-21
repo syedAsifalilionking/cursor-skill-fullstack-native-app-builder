@@ -392,6 +392,92 @@ app.get('/dashboard', isAuthenticated, async (req, res) => {
 });
 ```
 
+## Edge Functions
+
+Supabase Edge Functions run on Deno and deploy globally. Use them for webhooks, payment callbacks, scheduled jobs, or any server-side logic that shouldn't live in the CMS.
+
+### CLI Commands
+
+```bash
+supabase functions new my-function        # scaffold a new function
+supabase functions serve my-function      # local dev with hot reload
+supabase functions deploy my-function     # deploy to production
+supabase functions deploy                 # deploy all functions
+```
+
+### Function Skeleton
+
+```typescript
+// supabase/functions/my-function/index.ts
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+Deno.serve(async (req: Request) => {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+        return new Response("Unauthorized", { status: 401 });
+    }
+
+    const supabase = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    const { data, error } = await supabase.from("users").select("*").limit(10);
+    if (error) {
+        return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    }
+
+    return new Response(JSON.stringify({ data }), {
+        headers: { "Content-Type": "application/json" },
+    });
+});
+```
+
+### Invoking from server.js
+
+```javascript
+const { data, error } = await supabase.functions.invoke('my-function', {
+    body: { userId: '123', action: 'process' },
+    headers: { Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}` }
+});
+```
+
+### Webhook Example (Stripe Payment)
+
+```typescript
+// supabase/functions/stripe-webhook/index.ts
+import Stripe from "https://esm.sh/stripe@17";
+
+const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY")!, { apiVersion: "2024-12-18.acacia" });
+
+Deno.serve(async (req: Request) => {
+    const signature = req.headers.get("stripe-signature")!;
+    const body = await req.text();
+    const event = stripe.webhooks.constructEvent(body, signature, Deno.env.get("STRIPE_WEBHOOK_SECRET")!);
+
+    if (event.type === "checkout.session.completed") {
+        const session = event.data.object;
+        const supabase = createClient(
+            Deno.env.get("SUPABASE_URL")!,
+            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+        await supabase.from("users")
+            .update({ subscription_status: "active" })
+            .eq("stripe_customer_id", session.customer);
+    }
+
+    return new Response(JSON.stringify({ received: true }), { status: 200 });
+});
+```
+
+### Secrets Management
+
+```bash
+supabase secrets set STRIPE_SECRET_KEY=sk_live_...
+supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
+supabase secrets list
+```
+
 ## Environment Variables
 
 ```

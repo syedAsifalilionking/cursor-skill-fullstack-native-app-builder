@@ -502,6 +502,101 @@ struct AppShortcuts: AppShortcutsProvider {
 }
 ```
 
+## HealthKit Integration
+
+### Entitlements & Info.plist
+
+Enable the HealthKit capability in Xcode (Signing & Capabilities). Add usage descriptions to `Info.plist`:
+
+```xml
+<key>NSHealthShareUsageDescription</key>
+<string>We read your step count and activity data to track your progress.</string>
+<key>NSHealthUpdateUsageDescription</key>
+<string>We save your logged activities to Apple Health.</string>
+```
+
+### HealthKit Manager
+
+```swift
+import HealthKit
+
+final class HealthKitManager: ObservableObject {
+    static let shared = HealthKitManager()
+    private let store = HKHealthStore()
+    @Published var isAuthorized = false
+
+    var isAvailable: Bool { HKHealthStore.isHealthDataAvailable() }
+
+    func requestAuthorization() async throws {
+        let readTypes: Set<HKObjectType> = [
+            HKQuantityType(.stepCount),
+            HKQuantityType(.activeEnergyBurned),
+            HKQuantityType(.distanceWalkingRunning)
+        ]
+        let writeTypes: Set<HKSampleType> = [
+            HKQuantityType(.activeEnergyBurned)
+        ]
+
+        try await store.requestAuthorization(toShare: writeTypes, read: readTypes)
+        await MainActor.run { isAuthorized = true }
+    }
+
+    func fetchSteps(for date: Date) async throws -> Double {
+        let start = Calendar.current.startOfDay(for: date)
+        let end = Calendar.current.date(byAdding: .day, value: 1, to: start)!
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+
+        let stepType = HKQuantityType(.stepCount)
+        let descriptor = HKStatisticsQueryDescriptor(
+            predicate: .init(quantityType: stepType, predicate: predicate),
+            options: .cumulativeSum
+        )
+        let result = try await descriptor.result(for: store)
+        return result?.sumQuantity()?.doubleValue(for: .count()) ?? 0
+    }
+
+    func fetchActiveEnergy(for date: Date) async throws -> Double {
+        let start = Calendar.current.startOfDay(for: date)
+        let end = Calendar.current.date(byAdding: .day, value: 1, to: start)!
+        let predicate = HKQuery.predicateForSamples(withStart: start, end: end)
+
+        let energyType = HKQuantityType(.activeEnergyBurned)
+        let descriptor = HKStatisticsQueryDescriptor(
+            predicate: .init(quantityType: energyType, predicate: predicate),
+            options: .cumulativeSum
+        )
+        let result = try await descriptor.result(for: store)
+        return result?.sumQuantity()?.doubleValue(for: .kilocalorie()) ?? 0
+    }
+
+    func writeActiveEnergy(calories: Double, start: Date, end: Date) async throws {
+        let quantity = HKQuantity(unit: .kilocalorie(), doubleValue: calories)
+        let sample = HKQuantitySample(
+            type: HKQuantityType(.activeEnergyBurned),
+            quantity: quantity,
+            start: start,
+            end: end
+        )
+        try await store.save(sample)
+    }
+}
+```
+
+### Background Delivery
+
+Enable background delivery so the app receives updates even when not in the foreground:
+
+```swift
+func enableBackgroundDelivery() {
+    let stepType = HKQuantityType(.stepCount)
+    store.enableBackgroundDelivery(for: stepType, frequency: .hourly) { success, error in
+        if let error { print("Background delivery failed: \(error)") }
+    }
+}
+```
+
+Register an observer query in `AppDelegate` or app init to handle background updates.
+
 ## Additional References
 
 - **Firebase iOS setup** (Auth, Firestore, Messaging, Remote Config): [firebase-ios.md](firebase-ios.md)

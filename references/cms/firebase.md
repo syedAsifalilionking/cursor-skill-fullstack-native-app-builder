@@ -65,7 +65,13 @@ admins/                     # CMS admin accounts
 
 users/                      # App users managed through CMS
   {userId}/
-    name, email, status, createdAt, lastLogin
+    name, email, firebaseUID, status, createdAt, lastLogin,
+    subscriptionStatus, subscriptionPlan, subscriptionExpiresAt,
+    trialExpiresAt, aiDataSharingConsent
+
+fcmTokens/                  # Push notification tokens (one doc per device)
+  {token}/
+    token, platform (ios|android), userId, updatedAt
 
 [entity]/                   # One collection per content type
   {docId}/
@@ -81,6 +87,73 @@ media/                      # Media metadata
     url, path, mimetype, size, uploadedBy, createdAt
 
 express-sessions/           # Session store (auto-managed)
+```
+
+## Subscription & Trial Status (CMS Reading)
+
+Mobile apps sync subscription state to Firestore user documents. The CMS reads these fields to display status and gate features.
+
+### Dashboard Subscription Stats
+
+```javascript
+app.get('/dashboard', isAuthenticated, async (req, res) => {
+    const usersSnap = await db.collection('users').get();
+    const users = usersSnap.docs.map(d => d.data());
+
+    const stats = {
+        totalUsers: users.length,
+        activeSubscribers: users.filter(u => u.subscriptionStatus === 'active').length,
+        trialUsers: users.filter(u => u.subscriptionStatus === 'trial').length,
+        expiredUsers: users.filter(u => u.subscriptionStatus === 'expired').length
+    };
+
+    res.render('dashboard', stats);
+});
+```
+
+### User Detail with Subscription Info
+
+```javascript
+app.get('/users/view/:id', isAuthenticated, async (req, res) => {
+    const doc = await db.collection('users').doc(req.params.id).get();
+    if (!doc.exists) return res.redirect('/users');
+
+    const user = { id: doc.id, ...doc.data() };
+
+    // Compute trial status
+    if (user.trialExpiresAt) {
+        const trialEnd = user.trialExpiresAt.toDate();
+        user.trialDaysLeft = Math.max(0, Math.ceil((trialEnd - Date.now()) / 86400000));
+        user.isTrialExpired = trialEnd < new Date();
+    }
+
+    // Get user's FCM tokens for targeted push
+    const tokensSnap = await db.collection('fcmTokens')
+        .where('userId', '==', user.firebaseUID).get();
+    user.devices = tokensSnap.docs.map(d => ({
+        platform: d.data().platform,
+        updatedAt: d.data().updatedAt?.toDate().toLocaleDateString() || 'N/A'
+    }));
+
+    res.render('viewUser', { user });
+});
+```
+
+### Send Targeted Push via FCM
+
+```javascript
+async function sendPushToUser(firebaseUID, title, body) {
+    const tokensSnap = await db.collection('fcmTokens')
+        .where('userId', '==', firebaseUID).get();
+
+    const tokens = tokensSnap.docs.map(d => d.data().token);
+    if (tokens.length === 0) return;
+
+    await admin.messaging().sendEachForMulticast({
+        tokens,
+        notification: { title, body }
+    });
+}
 ```
 
 ## CRUD Operations (Direct Firestore)

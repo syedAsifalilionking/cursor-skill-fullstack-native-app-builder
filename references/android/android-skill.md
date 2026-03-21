@@ -442,6 +442,180 @@ Pattern lock: custom Compose canvas drawing with gesture detection.
 -keep class com.google.gson.reflect.TypeToken { *; }
 ```
 
+## Health Connect Integration
+
+### Dependency
+
+Add to `libs.versions.toml`:
+
+```toml
+[versions]
+health-connect = "1.1.0-alpha12"
+
+[libraries]
+health-connect = { module = "androidx.health.connect:connect-client", version.ref = "health-connect" }
+```
+
+### AndroidManifest
+
+```xml
+<uses-permission android:name="android.permission.health.READ_STEPS" />
+<uses-permission android:name="android.permission.health.READ_TOTAL_CALORIES_BURNED" />
+<uses-permission android:name="android.permission.health.WRITE_ACTIVE_CALORIES_BURNED" />
+
+<intent-filter>
+    <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+</intent-filter>
+```
+
+### Health Connect Service
+
+```kotlin
+class HealthConnectService(private val context: Context) {
+    private val client = HealthConnectClient.getOrCreate(context)
+
+    suspend fun checkAvailability(): Boolean {
+        return HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE
+    }
+
+    suspend fun requestPermissions(activity: ComponentActivity) {
+        val permissions = setOf(
+            HealthPermission.getReadPermission(StepsRecord::class),
+            HealthPermission.getReadPermission(TotalCaloriesBurnedRecord::class),
+            HealthPermission.getWritePermission(ActiveCaloriesBurnedRecord::class)
+        )
+        val granted = client.permissionController.getGrantedPermissions()
+        if (!granted.containsAll(permissions)) {
+            val launcher = activity.registerForActivityResult(
+                PermissionController.createRequestPermissionResultContract()
+            ) { /* check result */ }
+            launcher.launch(permissions)
+        }
+    }
+
+    suspend fun readSteps(date: LocalDate): Long {
+        val start = date.atStartOfDay(ZoneId.systemDefault()).toInstant()
+        val end = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()
+
+        val response = client.readRecords(
+            ReadRecordsRequest(
+                recordType = StepsRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(start, end)
+            )
+        )
+        return response.records.sumOf { it.count }
+    }
+
+    suspend fun readCalories(date: LocalDate): Double {
+        val start = date.atStartOfDay(ZoneId.systemDefault()).toInstant()
+        val end = date.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()
+
+        val response = client.readRecords(
+            ReadRecordsRequest(
+                recordType = TotalCaloriesBurnedRecord::class,
+                timeRangeFilter = TimeRangeFilter.between(start, end)
+            )
+        )
+        return response.records.sumOf { it.energy.inKilocalories }
+    }
+
+    suspend fun writeActiveCalories(calories: Double, start: Instant, end: Instant) {
+        val record = ActiveCaloriesBurnedRecord(
+            startTime = start,
+            startZoneOffset = ZoneOffset.systemDefault().rules.getOffset(start),
+            endTime = end,
+            endZoneOffset = ZoneOffset.systemDefault().rules.getOffset(end),
+            energy = Energy.kilocalories(calories)
+        )
+        client.insertRecords(listOf(record))
+    }
+}
+```
+
+## CameraX Scanning
+
+### Camera Permission
+
+```kotlin
+val cameraPermissionLauncher = rememberLauncherForActivityResult(
+    ActivityResultContracts.RequestPermission()
+) { granted ->
+    if (granted) { /* open scanner */ }
+    else { /* show rationale */ }
+}
+cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+```
+
+### Camera Preview Composable
+
+```kotlin
+@Composable
+fun CameraPreview(
+    onImageCaptured: (Uri) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+
+    val imageCapture = remember { ImageCapture.Builder().build() }
+
+    AndroidView(
+        factory = { ctx ->
+            PreviewView(ctx).apply {
+                implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                cameraProviderFuture.addListener({
+                    val cameraProvider = cameraProviderFuture.get()
+                    val preview = Preview.Builder().build().also {
+                        it.surfaceProvider = surfaceProvider
+                    }
+
+                    val imageAnalysis = ImageAnalysis.Builder()
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build()
+                        .also { analysis ->
+                            analysis.setAnalyzer(Executors.newSingleThreadExecutor()) { imageProxy ->
+                                // Frame-by-frame processing (barcode, text detection, etc.)
+                                imageProxy.close()
+                            }
+                        }
+
+                    cameraProvider.unbindAll()
+                    cameraProvider.bindToLifecycle(
+                        lifecycleOwner,
+                        CameraSelector.DEFAULT_BACK_CAMERA,
+                        preview, imageCapture, imageAnalysis
+                    )
+                }, ContextCompat.getMainExecutor(ctx))
+            }
+        },
+        modifier = modifier
+    )
+}
+```
+
+### Capturing a Photo for AI Vision
+
+```kotlin
+fun capturePhoto(imageCapture: ImageCapture, context: Context, onResult: (Uri) -> Unit) {
+    val photoFile = File.createTempFile("scan_", ".jpg", context.cacheDir)
+    val outputOptions = ImageCapture.OutputFileOptions.Builder(photoFile).build()
+
+    imageCapture.takePicture(outputOptions, ContextCompat.getMainExecutor(context),
+        object : ImageCapture.OnImageSavedCallback {
+            override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                onResult(Uri.fromFile(photoFile))
+            }
+            override fun onError(exception: ImageCaptureException) {
+                Log.e("CameraX", "Capture failed", exception)
+            }
+        }
+    )
+}
+```
+
+Pass the captured `Uri` to `VisionGPTService` for AI analysis.
+
 ## Additional References
 
 - **Firebase Android** (Auth, Firestore, FCM, Remote Config): [firebase-android.md](firebase-android.md)

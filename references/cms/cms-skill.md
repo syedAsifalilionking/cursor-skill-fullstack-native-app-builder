@@ -360,6 +360,81 @@ Repeat this pattern for every entity (users, products, categories, media, settin
 - **Roles**: stored in admin document (`admin`, `editor`, `author`, `viewer`)
 - **Login lockout**: track failed attempts in the admin doc, lock after N failures
 
+## Role-Based Access Control (RBAC)
+
+### Role Hierarchy
+
+| Role | Permissions |
+|------|-------------|
+| `admin` | Full access — manage admins, settings, all content, delete permanently |
+| `editor` | Create, edit, publish, archive any content; manage media |
+| `author` | Create and edit own content only; cannot publish |
+| `viewer` | Read-only dashboard access |
+
+### Middleware
+
+```javascript
+function requireRole(...allowedRoles) {
+    return (req, res, next) => {
+        if (!req.session.user) return res.redirect('/login');
+        if (!allowedRoles.includes(req.session.user.role)) {
+            return res.status(403).render('403', { layout: false });
+        }
+        next();
+    };
+}
+```
+
+### Route Examples
+
+```javascript
+// Admin-only routes
+app.get('/admins', isAuthenticated, requireRole('admin'), async (req, res) => { /* manage admin accounts */ });
+app.get('/settings', isAuthenticated, requireRole('admin'), async (req, res) => { /* site settings */ });
+app.post('/articles/permanent-delete/:id', isAuthenticated, requireRole('admin'), async (req, res) => { /* hard delete */ });
+
+// Editor and above
+app.post('/articles/publish/:id', isAuthenticated, requireRole('admin', 'editor'), async (req, res) => { /* publish */ });
+app.post('/articles/add', isAuthenticated, requireRole('admin', 'editor', 'author'), async (req, res) => { /* create */ });
+
+// All authenticated users (including viewers)
+app.get('/dashboard', isAuthenticated, async (req, res) => { /* dashboard — visible to all roles */ });
+```
+
+### Author-Only Content Filtering
+
+```javascript
+app.get('/articles', isAuthenticated, async (req, res) => {
+    let query = db.collection('articles').orderBy('createdAt', 'desc');
+
+    // Authors can only see their own content
+    if (req.session.user.role === 'author') {
+        query = query.where('authorId', '==', req.session.user.id);
+    }
+
+    const snapshot = await query.get();
+    const articles = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    res.render('articles', { articles });
+});
+```
+
+### EJS Conditional Rendering
+
+```html
+<% if (admin.role === 'admin') { %>
+    <li><a href="/admins"><i class="fas fa-users-cog"></i><span>Admins</span></a></li>
+    <li><a href="/settings"><i class="fas fa-cog"></i><span>Settings</span></a></li>
+<% } %>
+
+<% if (['admin', 'editor'].includes(admin.role)) { %>
+    <button class="button is-success" onclick="publishArticle('<%= article.id %>')">Publish</button>
+<% } %>
+
+<% if (admin.role !== 'viewer') { %>
+    <a href="/articles/add" class="button is-primary"><i class="fas fa-plus"></i> Add Article</a>
+<% } %>
+```
+
 ## File Uploads
 
 Use busboy middleware for multipart parsing (supports Firebase Cloud Functions where multer doesn't work):

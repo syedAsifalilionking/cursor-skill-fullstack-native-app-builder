@@ -33,15 +33,21 @@ Fields:
 Collection: users / Table: users
 
 Fields:
-  name         — text
-  email        — text, unique
-  phone        — text
-  avatar       — URL string
-  status       — active | inactive | banned
-  role         — user role in the app
-  lastLogin    — timestamp
-  createdAt    — server timestamp
-  updatedAt    — server timestamp
+  name                  — text
+  email                 — text, unique
+  phone                 — text
+  avatar                — URL string
+  firebaseUID           — text (Firebase Auth UID, links mobile user to this record)
+  status                — active | inactive | banned
+  role                  — user role in the app
+  subscriptionStatus    — none | trial | active | expired | cancelled | grace_period
+  subscriptionPlan      — monthly | yearly (null if none)
+  subscriptionExpiresAt — timestamp (current period end)
+  trialExpiresAt        — timestamp (trial end date, set on first sign-up)
+  aiDataSharingConsent  — boolean
+  lastLogin             — timestamp
+  createdAt             — server timestamp
+  updatedAt             — server timestamp
 ```
 
 ### Products (E-commerce CMS)

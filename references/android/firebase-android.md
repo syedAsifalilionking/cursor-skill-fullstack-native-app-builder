@@ -120,6 +120,68 @@ val credential = GoogleAuthProvider.getCredential(account.idToken, null)
 Firebase.auth.signInWithCredential(credential).addOnSuccessListener { /* done */ }
 ```
 
+### Facebook Sign-In
+
+Add the dependency in `build.gradle.kts`:
+
+```kotlin
+implementation("com.facebook.android:facebook-login:18.0.3")
+```
+
+Add to `res/values/strings.xml`:
+
+```xml
+<string name="facebook_app_id">YOUR_APP_ID</string>
+<string name="fb_login_protocol_scheme">fbYOUR_APP_ID</string>
+<string name="facebook_client_token">YOUR_CLIENT_TOKEN</string>
+```
+
+Add to `AndroidManifest.xml` inside `<application>`:
+
+```xml
+<meta-data android:name="com.facebook.sdk.ApplicationId"
+    android:value="@string/facebook_app_id" />
+<meta-data android:name="com.facebook.sdk.ClientToken"
+    android:value="@string/facebook_client_token" />
+
+<activity android:name="com.facebook.FacebookActivity"
+    android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation" />
+<activity android:name="com.facebook.CustomTabActivity" android:exported="true">
+    <intent-filter>
+        <action android:name="android.intent.action.VIEW" />
+        <category android:name="android.intent.category.DEFAULT" />
+        <category android:name="android.intent.category.BROWSABLE" />
+        <data android:scheme="@string/fb_login_protocol_scheme" />
+    </intent-filter>
+</activity>
+```
+
+```kotlin
+class FacebookSignInHelper(private val activity: ComponentActivity) {
+    private val callbackManager = CallbackManager.Factory.create()
+
+    fun signIn() {
+        LoginManager.getInstance().registerCallback(callbackManager,
+            object : FacebookCallback<LoginResult> {
+                override fun onSuccess(result: LoginResult) {
+                    val credential = FacebookAuthProvider.getCredential(result.accessToken.token)
+                    Firebase.auth.signInWithCredential(credential)
+                        .addOnSuccessListener { /* signed in */ }
+                        .addOnFailureListener { e -> /* handle error */ }
+                }
+                override fun onCancel() { /* user cancelled */ }
+                override fun onError(error: FacebookException) { /* handle error */ }
+            }
+        )
+        LoginManager.getInstance().logInWithReadPermissions(activity, listOf("email", "public_profile"))
+    }
+
+    fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        callbackManager.onActivityResult(requestCode, resultCode, data)
+    }
+}
+```
+
 ### Auth State Listener
 
 ```kotlin
