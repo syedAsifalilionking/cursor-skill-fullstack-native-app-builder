@@ -1,1 +1,30 @@
+# macOS
 .DS_Store
+
+# Node.js
+node_modules/
+.env
+.env.*
+
+# Firebase
+**/firebase-debug.log
+**/firestore-debug.log
+**/.firebaserc
+**/serviceAccount*.json
+
+# iOS
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+**/GoogleService-Info.plist
+
+# Android
+**/google-services.json
+**/local.properties
+**/.gradle/
+**/build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*~

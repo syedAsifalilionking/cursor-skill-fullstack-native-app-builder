@@ -71,7 +71,7 @@ All three platforms share the same Firebase backend and follow consistent archit
 ### Install from Git
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/cursor-skill-fullstack-native-app-builder.git ~/.cursor/skills/cursor-skill-fullstack-native-app-builder
+git clone https://github.com/Artl13/cursor-skill-fullstack-native-app-builder.git ~/.cursor/skills/cursor-skill-fullstack-native-app-builder
 ```
 
 Then restart Cursor. The skill will activate whenever you ask about building apps, CMS systems, mobile apps, or any related features.
@@ -230,4 +230,4 @@ exports.stopBilling = functions.pubsub
 
 ## License
 
-This skill is provided as-is for use with Cursor AI. Patterns are generic and can be applied to any project.
+MIT License — see [LICENSE](LICENSE) for details.
