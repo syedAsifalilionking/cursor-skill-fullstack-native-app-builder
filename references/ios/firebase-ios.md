@@ -119,7 +119,93 @@ try await Auth.auth().signIn(with: credential)
 
 ### Apple Sign-In
 
-Use `ASAuthorizationAppleIDProvider` with Firebase credential relay.
+Requires the "Sign in with Apple" capability in Xcode.
+
+```swift
+import AuthenticationServices
+import CryptoKit
+
+final class AppleSignInHelper: NSObject, ASAuthorizationControllerDelegate,
+                                ASAuthorizationControllerPresentationContextProviding {
+
+    private var currentNonce: String?
+    var onComplete: ((Result<AuthDataResult, Error>) -> Void)?
+
+    func startSignInFlow() {
+        let nonce = randomNonceString()
+        currentNonce = nonce
+
+        let provider = ASAuthorizationAppleIDProvider()
+        let request = provider.createRequest()
+        request.requestedScopes = [.fullName, .email]
+        request.nonce = sha256(nonce)
+
+        let controller = ASAuthorizationController(authorizationRequests: [request])
+        controller.delegate = self
+        controller.presentationContextProvider = self
+        controller.performRequests()
+    }
+
+    func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
+        UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first?.windows.first { $0.isKeyWindow } ?? UIWindow()
+    }
+
+    func authorizationController(controller: ASAuthorizationController,
+                                  didCompleteWithAuthorization authorization: ASAuthorization) {
+        guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
+              let nonce = currentNonce,
+              let appleIDToken = appleIDCredential.identityToken,
+              let idTokenString = String(data: appleIDToken, encoding: .utf8) else { return }
+
+        let credential = OAuthProvider.appleCredential(
+            withIDToken: idTokenString,
+            rawNonce: nonce,
+            fullName: appleIDCredential.fullName
+        )
+
+        Task {
+            do {
+                let result = try await Auth.auth().signIn(with: credential)
+                onComplete?(.success(result))
+            } catch {
+                onComplete?(.failure(error))
+            }
+        }
+    }
+
+    func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
+        onComplete?(.failure(error))
+    }
+
+    private func randomNonceString(length: Int = 32) -> String {
+        var randomBytes = [UInt8](repeating: 0, count: length)
+        _ = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
+        let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        return String(randomBytes.map { charset[Int($0) % charset.count] })
+    }
+
+    private func sha256(_ input: String) -> String {
+        let data = Data(input.utf8)
+        let hash = SHA256.hash(data: data)
+        return hash.compactMap { String(format: "%02x", $0) }.joined()
+    }
+}
+```
+
+SwiftUI button integration:
+
+```swift
+SignInWithAppleButton(.signIn) { request in
+    request.requestedScopes = [.fullName, .email]
+}
+onCompletion: { result in
+    // Use AppleSignInHelper for Firebase credential relay
+}
+.frame(height: 50)
+.signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+```
 
 ### Localized Auth Errors
 

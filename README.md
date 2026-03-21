@@ -123,6 +123,43 @@ Each platform skill references deeper documentation files for specific features 
 
 ---
 
+## Example Prompts
+
+Here are example prompts you can use in Cursor to trigger this skill:
+
+### Full-Stack Projects
+
+- "Build me a fitness tracking app with an admin CMS, iOS app, and Android app"
+- "Create a recipe sharing platform with a CMS to manage content, plus native iOS and Android apps"
+- "Build a habit tracker with a Node.js admin panel, an iPhone app, and an Android app"
+
+### CMS / Admin Panel Only
+
+- "Build me a CMS for managing blog posts with Firebase backend"
+- "Create an admin dashboard with user management, content CRUD, and file uploads using Supabase"
+- "Build a Node.js admin panel with dark mode, login lockout, and role-based access"
+
+### iOS App Only
+
+- "Build an iOS app with Firebase auth, StoreKit 2 subscriptions, and push notifications"
+- "Create a SwiftUI app with ChatGPT integration, camera scanning, and offline caching"
+- "Build an iPhone app with onboarding flow, HealthKit, widgets, and Live Activities"
+
+### Android App Only
+
+- "Build an Android app with Jetpack Compose, Google Play Billing, and Firebase"
+- "Create a Kotlin app with OpenAI chat, CameraX scanning, and Material 3 theming"
+- "Build an Android app with Health Connect, app widgets, and in-app updates"
+
+### Feature-Specific
+
+- "Add subscription billing to my iOS app with StoreKit 2 and a paywall"
+- "Set up push notifications with FCM and scheduled local reminders for Android"
+- "Add WidgetKit home screen and lock screen widgets to my iOS app"
+- "Integrate OpenAI vision API for camera scanning in my Android app"
+
+---
+
 ## Important Notes & Warnings
 
 ### Firebase Billing — Be Careful with Costs

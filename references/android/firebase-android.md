@@ -346,6 +346,74 @@ suspend fun uploadImage(uri: Uri, path: String): String {
 }
 ```
 
+## Crashlytics
+
+The Gradle plugin (`com.google.firebase.crashlytics`) is already applied in setup. Add runtime usage:
+
+### Set User Identity
+
+Associate crashes with a specific user for debugging:
+
+```kotlin
+Firebase.crashlytics.setUserId(Firebase.auth.currentUser?.uid ?: "anonymous")
+```
+
+Call this after sign-in and clear on sign-out:
+
+```kotlin
+Firebase.auth.addAuthStateListener { auth ->
+    Firebase.crashlytics.setUserId(auth.currentUser?.uid ?: "")
+}
+```
+
+### Custom Keys
+
+Attach contextual data to crash reports:
+
+```kotlin
+Firebase.crashlytics.setCustomKey("screen", "DashboardView")
+Firebase.crashlytics.setCustomKey("subscription_status", "active")
+Firebase.crashlytics.setCustomKey("app_theme", if (isSystemInDarkTheme) "dark" else "light")
+```
+
+### Log Breadcrumbs
+
+Add log lines that appear in crash reports for context:
+
+```kotlin
+Firebase.crashlytics.log("User opened scanner")
+Firebase.crashlytics.log("API call to /chat with ${messages.size} messages")
+```
+
+### Record Non-Fatal Errors
+
+Capture handled exceptions without crashing:
+
+```kotlin
+try {
+    val response = chatGPTService.sendMessage(prompt)
+} catch (e: Exception) {
+    Firebase.crashlytics.recordException(e)
+    // Show user-friendly error, app continues running
+}
+```
+
+For OpenAI/network errors with extra context:
+
+```kotlin
+fun recordApiError(endpoint: String, statusCode: Int, error: Exception) {
+    Firebase.crashlytics.setCustomKey("api_endpoint", endpoint)
+    Firebase.crashlytics.setCustomKey("status_code", statusCode)
+    Firebase.crashlytics.recordException(error)
+}
+```
+
+### Opt-Out for Debug Builds
+
+```kotlin
+Firebase.crashlytics.setCrashlyticsCollectionEnabled(!BuildConfig.DEBUG)
+```
+
 ## Analytics
 
 ```kotlin
